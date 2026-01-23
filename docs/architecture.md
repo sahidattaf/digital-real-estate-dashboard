@@ -69,6 +69,18 @@ Currently, inquiries are captured via a form in the Property Drawer and persiste
 }
 ```
 
+### AI Chatbot (RAG-lite)
+
+The "Bossa Assistant" uses a frontend-only Retrieval-Augmented Generation (RAG) approach.
+
+1. **Index**: It loads `src/data/properties.json` into memory.
+2. **Retrieval**: Uses regex-based intent classification to filter properties by:
+    * Price (e.g., "under $1M")
+    * Type (e.g., "villa", "land")
+    * Status (e.g., "available")
+    * Phase (e.g., "Phase 2")
+3. **Generation**: Constructs a natural language response summarizing the top matching results.
+
 ## Migration Path to Backend
 
 To move to a production backend (v1.0):
