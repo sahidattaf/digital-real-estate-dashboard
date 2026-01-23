@@ -181,10 +181,10 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
         // 2. RAG Pipeline Execution
         setTimeout(() => {
             const intent = parseIntent(userMsg.text);
-            const { properties, explanation, confidenceScore } = retrieveAndRank(intent);
+            const { properties, explanation } = retrieveAndRank(intent);
 
             // Log Internal Confidence Score
-            // console.log(`[RAG-Internal] Confidence Score: ${confidenceScore}% (${properties.length}/${propertiesData.length} matches)`);
+            // Note: confidenceScore is computed in retrieveAndRank but not exposed to UI to avoid clutter.
 
             let responseText = "";
 
