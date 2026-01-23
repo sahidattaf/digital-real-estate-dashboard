@@ -12,6 +12,132 @@ interface Message {
     timestamp: Date;
 }
 
+// STEP 1: Intent Parsing Types & Logic
+interface UserIntent {
+    listingType?: 'sale' | 'rent';
+    type?: 'residential' | 'commercial' | 'land';
+    minPrice?: number;
+    maxPrice?: number;
+    phase?: string;
+    status: 'available' | 'reserved' | 'sold'; // Default 'available'
+}
+
+const parseIntent = (query: string): UserIntent => {
+    const lowerQuery = query.toLowerCase();
+    const intent: UserIntent = { status: 'available' };
+
+    // Transaction Type
+    if (lowerQuery.match(/\b(rent|lease)\b/)) intent.listingType = 'rent';
+    if (lowerQuery.match(/\b(buy|sale|purchase)\b/)) intent.listingType = 'sale';
+
+    // Property Type
+    if (lowerQuery.match(/\b(villa|home|house|apartment|residence|studio)\b/)) intent.type = 'residential';
+    if (lowerQuery.match(/\b(commercial|office|store|shop|retail)\b/)) intent.type = 'commercial';
+    if (lowerQuery.match(/\b(land|lot|plot|ground)\b/)) intent.type = 'land';
+
+    // Phase
+    const phaseMatch = lowerQuery.match(/\bphase\s?(\d+)/);
+    if (phaseMatch) intent.phase = phaseMatch[1];
+    else if (lowerQuery.includes('bossa piska')) intent.phase = '2';
+    else if (lowerQuery.includes('vista royal') || lowerQuery.includes('punda') || lowerQuery.includes('pietermaai')) intent.phase = '1';
+    else if (lowerQuery.includes('beach') || lowerQuery.includes('jan thiel')) intent.phase = '3';
+
+    // Price Constraints
+    // Examples: "under 1m", "max 500k", "< 200000"
+    const maxPriceMatch = lowerQuery.match(/(?:under|less than|max|<)\s?\$?(\d+(?:[.,]\d+)?)(k|m)?/i);
+    if (maxPriceMatch) {
+        let val = parseFloat(maxPriceMatch[1].replace(/,/g, ''));
+        if (maxPriceMatch[2] === 'k') val *= 1000;
+        if (maxPriceMatch[2] === 'm') val *= 1000000;
+        intent.maxPrice = val;
+    }
+
+    // Examples: "over 500k", "min 1m", "> 200000"
+    const minPriceMatch = lowerQuery.match(/(?:over|more than|min|>)\s?\$?(\d+(?:[.,]\d+)?)(k|m)?/i);
+    if (minPriceMatch) {
+        let val = parseFloat(minPriceMatch[1].replace(/,/g, ''));
+        if (minPriceMatch[2] === 'k') val *= 1000;
+        if (minPriceMatch[2] === 'm') val *= 1000000;
+        intent.minPrice = val;
+    }
+
+    // Status Override (if user explicitly asks for sold/reserved)
+    if (lowerQuery.includes('sold')) intent.status = 'sold';
+    if (lowerQuery.includes('reserved') && !lowerQuery.includes('available')) intent.status = 'reserved';
+    if (lowerQuery.includes('all') || lowerQuery.includes('everything')) intent.status = undefined as any; // Trick to show all
+
+    return intent;
+};
+
+// STEP 2 & 3: Retrieval & Ranking
+const retrieveAndRank = (intent: UserIntent): { properties: Property[], explanation: string } => {
+    let matches = propertiesData as unknown as Property[];
+    let explanationParts: string[] = [];
+
+    // Filter Step
+    if (intent.status) {
+        matches = matches.filter(p => p.status === intent.status);
+        explanationParts.push(`Status: ${intent.status}`);
+    } else if (intent.status === undefined) {
+        explanationParts.push(`Status: All`);
+    }
+
+    if (intent.listingType) {
+        matches = matches.filter(p => p.listing_type === intent.listingType || p.listing_type === 'both');
+        explanationParts.push(`For: ${intent.listingType}`);
+    }
+
+    if (intent.type) {
+        matches = matches.filter(p => p.type === intent.type || (intent.type === 'land' && p.id.startsWith('plot_')));
+        explanationParts.push(`Type: ${intent.type}`);
+    }
+
+    if (intent.phase) {
+        matches = matches.filter(p => p.phase === intent.phase);
+        explanationParts.push(`Phase: ${intent.phase}`);
+    }
+
+    if (intent.maxPrice) {
+        matches = matches.filter(p => p.price.amount <= intent.maxPrice!);
+        explanationParts.push(`Max Price: $${intent.maxPrice.toLocaleString()}`);
+    }
+
+    if (intent.minPrice) {
+        matches = matches.filter(p => p.price.amount >= intent.minPrice!);
+        explanationParts.push(`Min Price: $${intent.minPrice.toLocaleString()}`);
+    }
+
+    // Ranking Step
+    matches.sort((a, b) => {
+        // Priority 1: Closest price to constraint (if maxPrice provided)
+        // User wants "under X", so generally items closer to X are "better" matches (maximizing budget)? 
+        // OR user wants cheapest? Prompt said: "Closest price to user's constraint (but under limit)"
+        if (intent.maxPrice) {
+            const diffA = intent.maxPrice - a.price.amount;
+            const diffB = intent.maxPrice - b.price.amount;
+            if (diffA !== diffB) return diffA - diffB; // Smaller difference comes first (closer to limit)
+        }
+
+        // Priority 2: Exact Phase Match (handled by filter, but if we had lenient mode, this would be key)
+        if (intent.phase) {
+            if (a.phase === intent.phase && b.phase !== intent.phase) return -1;
+            if (b.phase === intent.phase && a.phase !== intent.phase) return 1;
+        }
+
+        // Priority 3: Smaller Area First (Affordability/Availability bias)
+        if (a.area_m2 !== b.area_m2) return a.area_m2 - b.area_m2;
+
+        // Priority 4: Stable ID Sort
+        return a.id.localeCompare(b.id);
+    });
+
+    return {
+        properties: matches,
+        explanation: explanationParts.join(', ') || 'Showing all listings'
+    };
+};
+
+
 const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -33,75 +159,10 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
         scrollToBottom();
     }, [messages]);
 
-    // RAG-lite Logic: Simple intent classification and keyword filtering
-    const queryProperties = (query: string): string => {
-        const lowerQuery = query.toLowerCase();
-        let filtered: Property[] = propertiesData as unknown as Property[];
-
-        // 1. Filter by Phase
-        if (lowerQuery.includes('phase 1') || lowerQuery.includes('vista royal') || lowerQuery.includes('punda') || lowerQuery.includes('pietermaai')) {
-            filtered = filtered.filter(p => p.phase === '1');
-        } else if (lowerQuery.includes('phase 2') || lowerQuery.includes('bossa piska')) {
-            filtered = filtered.filter(p => p.phase === '2');
-        } else if (lowerQuery.includes('phase 3') || lowerQuery.includes('beach') || lowerQuery.includes('jan thiel')) {
-            filtered = filtered.filter(p => p.phase === '3');
-        }
-
-        // 2. Filter by Type
-        if (lowerQuery.includes('villa') || lowerQuery.includes('home') || lowerQuery.includes('house') || lowerQuery.includes('apartment') || lowerQuery.includes('residential')) {
-            filtered = filtered.filter(p => p.type === 'residential');
-        } else if (lowerQuery.includes('land') || lowerQuery.includes('lot') || lowerQuery.includes('plot')) {
-            filtered = filtered.filter(p => p.type === 'land' || (p.type === 'residential' && p.id.startsWith('plot_'))); // Handle plots in master plan
-        } else if (lowerQuery.includes('commercial') || lowerQuery.includes('office') || lowerQuery.includes('store') || lowerQuery.includes('shop')) {
-            filtered = filtered.filter(p => p.type === 'commercial');
-        }
-
-        // 3. Filter by Status
-        if (lowerQuery.includes('available')) {
-            filtered = filtered.filter(p => p.status === 'available');
-        } else if (lowerQuery.includes('sold')) {
-            filtered = filtered.filter(p => p.status === 'sold');
-        } else if (lowerQuery.includes('rent')) {
-            filtered = filtered.filter(p => p.listing_type === 'rent');
-        }
-
-        // 4. Filter by Price (Simple "under X" logic)
-        const priceMatch = lowerQuery.match(/(?:under|less than|<)\s?\$?(\d+(?:[.,]\d+)?)(k|m)?/i);
-        if (priceMatch) {
-            let limit = parseFloat(priceMatch[1].replace(',', ''));
-            const multiplier = priceMatch[2];
-            if (multiplier === 'k') limit *= 1000;
-            if (multiplier === 'm') limit *= 1000000;
-
-            filtered = filtered.filter(p => p.price.amount <= limit);
-        }
-
-        // Generate Response
-        if (filtered.length === 0) {
-            return "I couldn't find any properties matching those criteria. Try broadening your search (e.g., 'available properties').";
-        }
-
-        if (filtered.length === propertiesData.length && query.length < 10) {
-            return "I have " + filtered.length + " properties in total. Could you be more specific? For example, 'do you have villas under $1M?'";
-        }
-
-        const topResults = filtered.slice(0, 3);
-        const resultString = topResults.map(p =>
-            `• ${p.title} (${p.status}): ${p.price.label || '$' + p.price.amount.toLocaleString()}`
-        ).join('\n');
-
-        let reply = `I found ${filtered.length} matching propert${filtered.length === 1 ? 'y' : 'ies'}:\n${resultString}`;
-
-        if (filtered.length > 3) {
-            reply += `\n\nAnd ${filtered.length - 3} more... Check the Listings page for the full view!`;
-        }
-
-        return reply;
-    };
-
     const handleSend = async () => {
         if (!inputValue.trim()) return;
 
+        // 1. User Message
         const userMsg: Message = {
             id: Date.now().toString(),
             text: inputValue,
@@ -113,10 +174,31 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
         setInputValue('');
         setIsTyping(true);
 
-        // Process Query
-        const responseText = queryProperties(inputValue);
-
+        // 2. RAG Pipeline Execution
         setTimeout(() => {
+            const intent = parseIntent(userMsg.text);
+            const { properties, explanation } = retrieveAndRank(intent);
+
+            let responseText = "";
+
+            if (properties.length === 0) {
+                responseText = `Based on our current listings, there are no matching properties.\n\nWhy these results?\n• Criteria: ${explanation}\n• We currently have 0 matches in our database.`;
+            } else {
+                const topResults = properties.slice(0, 3);
+                const list = topResults.map(p =>
+                    `• **[${p.id}]** ${p.type.charAt(0).toUpperCase() + p.type.slice(1)} in Phase ${p.phase}\n   Price: ${p.price.label || '$' + p.price.amount.toLocaleString()} | Area: ${p.area_m2}m² | Status: ${p.status}`
+                ).join('\n\n');
+
+                responseText = `Here are the top matches:\n\n${list}`;
+
+                if (properties.length > 3) {
+                    responseText += `\n\n*(And ${properties.length - 3} more properties available)*`;
+                }
+
+                // Mandatory Explanation Block
+                responseText += `\n\n**Why these results?**\n• Filtered by: ${explanation}\n• Ranked by: Price proximity & size.`;
+            }
+
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 text: responseText,
@@ -125,7 +207,7 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
             };
             setMessages((prev) => [...prev, aiMsg]);
             setIsTyping(false);
-        }, 1000);
+        }, 800);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -151,7 +233,7 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                 <h3 className="font-bold text-white">Bossa Assistant</h3>
                                 <div className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span className="text-xs text-ocean-100 font-medium">Online • v0.3</span>
+                                    <span className="text-xs text-ocean-100 font-medium">Live • Properties DB</span>
                                 </div>
                             </div>
                         </div>
@@ -177,13 +259,13 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                     {msg.sender === 'user' ? <User size={16} className="text-white" /> : <Bot size={16} className="text-white" />}
                                 </div>
                                 <div className={cn(
-                                    "p-3 rounded-2xl text-sm whitespace-pre-wrap",
+                                    "p-3 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed",
                                     msg.sender === 'user'
                                         ? "bg-sunset-500/20 border border-sunset-500/30 text-white rounded-tr-none"
                                         : "bg-ocean-600/20 border border-ocean-600/30 text-white rounded-tl-none"
                                 )}>
                                     <p>{msg.text}</p>
-                                    <span className="text-[10px] text-slate-400 mt-1 block opacity-70">
+                                    <span className="text-[10px] text-slate-400 mt-2 block opacity-70">
                                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -212,8 +294,8 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Do you have villas under $1M?"
-                                className="w-full bg-navy-800 text-white placeholder:text-slate-500 rounded-xl pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-ocean-500 focus:ring-1 focus:ring-ocean-500 transition-all"
+                                placeholder="Plots under $500k in Phase 2..."
+                                className="w-full bg-navy-800 text-white placeholder:text-slate-500 rounded-xl pl-4 pr-12 py-3 border border-white/10 focus:outline-none focus:border-ocean-500 focus:ring-1 focus:ring-ocean-500 transition-all shadow-inner"
                             />
                             <button
                                 onClick={handleSend}
@@ -225,7 +307,7 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                         </div>
                         <div className="mt-2 flex items-center justify-center gap-1.5">
                             <Sparkles size={12} className="text-emerald-400" />
-                            <span className="text-[10px] text-slate-400">Connected to Live Property DB (v0.3)</span>
+                            <span className="text-[10px] text-slate-400">Deterministic RAG Pipeline Active</span>
                         </div>
                     </div>
                 </motion.div>
