@@ -32,7 +32,7 @@ const Listings = () => {
             const searchTerm = filters.search.toLowerCase();
             const matchesSearch =
                 property.title.toLowerCase().includes(searchTerm) ||
-                property.address.toLowerCase().includes(searchTerm);
+                property.location.address.toLowerCase().includes(searchTerm);
             if (!matchesSearch) return false;
         }
 
@@ -40,15 +40,16 @@ const Listings = () => {
         if (filters.status && property.listing_type !== filters.status) return false;
 
         // Type Filter
-        if (filters.type && property.property_type !== filters.type) return false;
+        if (filters.type && property.type !== filters.type) return false;
 
         // Price Filter
         if (filters.priceRange) {
             const [min, max] = filters.priceRange.split('-').map(val => val === '1000000+' ? 1000000 : Number(val));
+            const price = property.price.amount;
             if (filters.priceRange === '1000000+') {
-                if (property.price_usd < 1000000) return false;
+                if (price < 1000000) return false;
             } else {
-                if (property.price_usd < min || property.price_usd > max) return false;
+                if (price < min || price > max) return false;
             }
         }
 

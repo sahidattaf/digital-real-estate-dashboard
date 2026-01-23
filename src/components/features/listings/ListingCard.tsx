@@ -41,10 +41,13 @@ const ListingCard: React.FC<ListingCardProps> = ({ property }) => {
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-navy-900 to-transparent p-4 pt-10">
                     <div className="flex justify-between items-end">
                         <Badge variant="default" className="capitalize bg-ocean-600/90 text-white border-none mb-2">
-                            {property.property_type}
+                            {property.type}
                         </Badge>
                         <span className="text-2xl font-bold text-white drop-shadow-lg">
-                            ${property.price_usd.toLocaleString()}
+                            {/* Format Price depending on currency */}
+                            {property.price.currency === 'USD' ? '$' : 'ƒ'}
+                            {property.price.amount.toLocaleString()}
+                            {property.price.period === 'monthly' && <span className="text-sm font-normal text-white/80">/mo</span>}
                         </span>
                     </div>
                 </div>
@@ -58,27 +61,27 @@ const ListingCard: React.FC<ListingCardProps> = ({ property }) => {
                     </h3>
                     <div className="flex items-center gap-1 text-slate-400 text-sm mt-1">
                         <MapPin size={14} />
-                        <span>{property.address}</span>
+                        <span>{property.location.address}</span>
                     </div>
                 </div>
 
                 {/* Features Grid */}
                 <div className="grid grid-cols-3 gap-2 py-3 border-y border-white/5">
-                    {property.bedrooms && (
+                    {property.specifications?.bedrooms && (
                         <div className="flex items-center gap-2 text-slate-300">
                             <BedDouble size={16} className="text-ocean-400" />
-                            <span className="text-sm font-medium">{property.bedrooms} Beds</span>
+                            <span className="text-sm font-medium">{property.specifications.bedrooms} Beds</span>
                         </div>
                     )}
-                    {property.bathrooms && (
+                    {property.specifications?.bathrooms && (
                         <div className="flex items-center gap-2 text-slate-300">
                             <Bath size={16} className="text-ocean-400" />
-                            <span className="text-sm font-medium">{property.bathrooms} Baths</span>
+                            <span className="text-sm font-medium">{property.specifications.bathrooms} Baths</span>
                         </div>
                     )}
                     <div className="flex items-center gap-2 text-slate-300">
                         <Ruler size={16} className="text-ocean-400" />
-                        <span className="text-sm font-medium">{property.size_m2}m²</span>
+                        <span className="text-sm font-medium">{property.area_m2}m²</span>
                     </div>
                 </div>
 

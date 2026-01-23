@@ -1,0 +1,205 @@
+[
+    {
+        "id": "prop_001",
+        "title": "Luxury Oceanview Villa",
+        "description": "Stunning 5-bedroom villa with panoramic views of the Caribbean Sea. Features infinity pool, smart home system, and private beach access.",
+        "type": "residential",
+        "listing_type": "sale",
+        "status": "available",
+        "price": {
+            "amount": 1250000,
+            "currency": "USD"
+        },
+        "area_m2": 450,
+        "specifications": {
+            "bedrooms": 5,
+            "bathrooms": 4.5
+        },
+        "location": {
+            "address": "Vista Royal, Willemstad",
+            "coordinates": {
+                "lat": 12.000,
+                "lng": -68.000
+            }
+        },
+        "images": [
+            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2671&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2670&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Pool",
+            "Ocean View",
+            "Smart Home",
+            "Garage"
+        ],
+        "phase": "1"
+    },
+    {
+        "id": "prop_002",
+        "title": "Downtown Commercial Space",
+        "description": "Prime retail location in the heart of Punda. High foot traffic area, perfect for a boutique or gallery.",
+        "type": "commercial",
+        "listing_type": "rent",
+        "status": "available",
+        "price": {
+            "amount": 3500,
+            "currency": "USD",
+            "period": "monthly"
+        },
+        "area_m2": 120,
+        "location": {
+            "address": "Punda, Willemstad"
+        },
+        "images": [
+            "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2301&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "AC",
+            "Security",
+            "Storefront"
+        ],
+        "phase": "1"
+    },
+    {
+        "id": "prop_003",
+        "title": "Beachfront Development Lot",
+        "description": "Exclusive 2000m2 lot ready for development. Zoning approved for mixed-use restaurant and resort.",
+        "type": "land",
+        "listing_type": "sale",
+        "status": "available",
+        "price": {
+            "amount": 850000,
+            "currency": "USD"
+        },
+        "area_m2": 2000,
+        "location": {
+            "address": "Jan Thiel, Willemstad"
+        },
+        "images": [
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2673&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Beach Access",
+            "Zoning Approved"
+        ],
+        "phase": "3"
+    },
+    {
+        "id": "prop_004",
+        "title": "Modern City Apartment",
+        "description": "Sleek 2-bedroom apartment with city views and rooftop terrace access.",
+        "type": "residential",
+        "listing_type": "rent",
+        "status": "rented",
+        "price": {
+            "amount": 2200,
+            "currency": "USD",
+            "period": "monthly"
+        },
+        "area_m2": 110,
+        "specifications": {
+            "bedrooms": 2,
+            "bathrooms": 2
+        },
+        "location": {
+            "address": "Pietermaai, Willemstad"
+        },
+        "images": [
+            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=2670&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Rooftop",
+            "Gym",
+            "Wifi"
+        ],
+        "phase": "1"
+    },
+    {
+        "id": "plot_a_001",
+        "title": "Cluster A: Ocean Villas",
+        "description": "Prime plots with elevated ocean views. Perfect for custom 3-4 bedroom villas.",
+        "type": "residential",
+        "listing_type": "sale",
+        "status": "available",
+        "price": {
+            "amount": 450000,
+            "currency": "USD",
+            "label": "From $450k"
+        },
+        "area_m2": 500,
+        "location": {
+            "address": "Bossa Piska Project",
+            "map_position": {
+                "top": "30%",
+                "left": "20%"
+            }
+        },
+        "phase": "2",
+        "images": [
+            "https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2671&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Ocean View",
+            "Gated"
+        ]
+    },
+    {
+        "id": "plot_b_001",
+        "title": "Cluster B: Garden Residences",
+        "description": "Low-rise boutique apartments surrounding the central tropical garden.",
+        "type": "residential",
+        "listing_type": "sale",
+        "status": "reserved",
+        "price": {
+            "amount": 280000,
+            "currency": "USD",
+            "label": "From $280k"
+        },
+        "area_m2": 120,
+        "location": {
+            "address": "Bossa Piska Project",
+            "map_position": {
+                "top": "50%",
+                "left": "50%"
+            }
+        },
+        "phase": "2",
+        "images": [
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2670&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Garden",
+            "Pool Access"
+        ]
+    },
+    {
+        "id": "amenity_001",
+        "title": "Community Wellness Center",
+        "description": "Shared facility including gym, yoga studio, and co-working space.",
+        "type": "commercial",
+        "listing_type": "sale",
+        "status": "sold",
+        "price": {
+            "amount": 0,
+            "currency": "USD",
+            "label": "Not for sale"
+        },
+        "area_m2": 1200,
+        "location": {
+            "address": "Bossa Piska Project",
+            "map_position": {
+                "top": "70%",
+                "left": "75%"
+            }
+        },
+        "phase": "2",
+        "images": [
+            "https://images.unsplash.com/photo-1544984243-ec57ea16fe25?q=80&w=2574&auto=format&fit=crop"
+        ],
+        "amenities": [
+            "Gym",
+            "Yoga",
+            "Co-working"
+        ]
+    }
+]
