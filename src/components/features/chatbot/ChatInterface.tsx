@@ -184,9 +184,7 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
             const { properties, explanation, confidenceScore } = retrieveAndRank(intent);
 
             // Log Internal Confidence Score
-            if ((import.meta.env as any).MODE === 'development') {
-                console.log(`[RAG-Internal] Confidence Score: ${confidenceScore}% (${properties.length}/${propertiesData.length} matches)`);
-            }
+            // console.log(`[RAG-Internal] Confidence Score: ${confidenceScore}% (${properties.length}/${propertiesData.length} matches)`);
 
             let responseText = "";
 
