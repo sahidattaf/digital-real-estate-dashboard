@@ -1,5 +1,6 @@
 import { Map, TrendingUp, Users, HardHat } from 'lucide-react';
 import DevelopmentTimeline from '@/components/features/projects/DevelopmentTimeline';
+import BossaMasterPlan from '@/components/features/projects/BossaMasterPlan';
 
 const StatCard = ({ icon: Icon, label, value, sub }: { icon: any, label: string, value: string, sub: string }) => (
     <div className="glass-card p-5 rounded-xl">
@@ -33,19 +34,8 @@ const BossaPiskaProject = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Visual / Map Area */}
-                <div className="lg:col-span-2 glass-panel p-1 rounded-2xl overflow-hidden min-h-[400px] relative group">
-                    <img
-                        src="https://images.unsplash.com/photo-1544984243-ec57ea16fe25?q=80&w=2574&auto=format&fit=crop"
-                        alt="Project Masterplan"
-                        className="w-full h-full object-cover rounded-xl opacity-80 group-hover:opacity-100 transition-opacity duration-500"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 text-center">
-                            <Map className="mx-auto text-ocean-400 mb-2" size={32} />
-                            <h3 className="text-xl font-bold text-white">Interactive Plot Map</h3>
-                            <p className="text-sm text-slate-300">Coming Soon: Click to reserve plots</p>
-                        </div>
-                    </div>
+                <div className="lg:col-span-2">
+                    <BossaMasterPlan />
                 </div>
 
                 {/* Timeline */}
