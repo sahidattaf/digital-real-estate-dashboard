@@ -70,7 +70,7 @@ const parseIntent = (query: string): UserIntent => {
 };
 
 // STEP 2 & 3: Retrieval & Ranking
-const retrieveAndRank = (intent: UserIntent): { properties: Property[], explanation: string } => {
+const retrieveAndRank = (intent: UserIntent): { properties: Property[], explanation: string, confidenceScore: number } => {
     let matches = propertiesData as unknown as Property[];
     let explanationParts: string[] = [];
 
@@ -107,18 +107,21 @@ const retrieveAndRank = (intent: UserIntent): { properties: Property[], explanat
         explanationParts.push(`Min Price: $${intent.minPrice.toLocaleString()}`);
     }
 
+    // Compute Confidence Score
+    // confidenceScore indicates how much of the inventory matches the user’s intent.
+    const totalInventory = propertiesData.length;
+    const confidenceScore = Math.round((matches.length / totalInventory) * 100);
+
     // Ranking Step
     matches.sort((a, b) => {
         // Priority 1: Closest price to constraint (if maxPrice provided)
-        // User wants "under X", so generally items closer to X are "better" matches (maximizing budget)? 
-        // OR user wants cheapest? Prompt said: "Closest price to user's constraint (but under limit)"
         if (intent.maxPrice) {
             const diffA = intent.maxPrice - a.price.amount;
             const diffB = intent.maxPrice - b.price.amount;
             if (diffA !== diffB) return diffA - diffB; // Smaller difference comes first (closer to limit)
         }
 
-        // Priority 2: Exact Phase Match (handled by filter, but if we had lenient mode, this would be key)
+        // Priority 2: Exact Phase Match
         if (intent.phase) {
             if (a.phase === intent.phase && b.phase !== intent.phase) return -1;
             if (b.phase === intent.phase && a.phase !== intent.phase) return 1;
@@ -133,7 +136,8 @@ const retrieveAndRank = (intent: UserIntent): { properties: Property[], explanat
 
     return {
         properties: matches,
-        explanation: explanationParts.join(', ') || 'Showing all listings'
+        explanation: explanationParts.join(', ') || 'Showing all listings',
+        confidenceScore
     };
 };
 
@@ -177,7 +181,12 @@ const ChatInterface = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
         // 2. RAG Pipeline Execution
         setTimeout(() => {
             const intent = parseIntent(userMsg.text);
-            const { properties, explanation } = retrieveAndRank(intent);
+            const { properties, explanation, confidenceScore } = retrieveAndRank(intent);
+
+            // Log Internal Confidence Score
+            if (import.meta.env.DEV) {
+                console.log(`[RAG-Internal] Confidence Score: ${confidenceScore}% (${properties.length}/${propertiesData.length} matches)`);
+            }
 
             let responseText = "";
 

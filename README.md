@@ -41,7 +41,7 @@ See [docs/architecture.md](./docs/architecture.md) for detailed system design an
 * **Interactive Drawer**: New slide-over details view for map plots.
 * **Inquiry System**: Capture leads directly from the map view (currently saved to LocalStorage).
 * **Normalized Types**: strict `Property` TypeScript interfaces.
-* **Deterministic RAG Chatbot**: The "Bossa Assistant" now uses a rigorous 5-step retrieval pipeline (Parse -> Filter -> Rank -> Response -> Explain) to answer questions directly from `properties.json` without hallucination.
+* **Deterministic RAG Chatbot**: The "Bossa Assistant" now uses a rigorous 5-step retrieval pipeline (Parse -> Filter -> Rank -> Response -> Explain) to answer questions directly from `properties.json` without hallucination. It also computes an internal confidence score based on inventory match rate (not user-facing).
 
 ## 📝 Roadmap
 
