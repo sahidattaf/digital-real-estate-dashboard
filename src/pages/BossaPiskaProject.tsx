@@ -1,6 +1,7 @@
-import { Map, TrendingUp, Users, HardHat } from 'lucide-react';
 import DevelopmentTimeline from '@/components/features/projects/DevelopmentTimeline';
 import BossaMasterPlan from '@/components/features/projects/BossaMasterPlan';
+import { getProject } from '@/data/projects';
+import type { ProjectStat } from '@/types/project';
 
 const StatCard = ({ icon: Icon, label, value, sub }: { icon: any, label: string, value: string, sub: string }) => (
     <div className="glass-card p-5 rounded-xl">
@@ -15,21 +16,28 @@ const StatCard = ({ icon: Icon, label, value, sub }: { icon: any, label: string,
     </div>
 );
 
+const project = getProject('bossa-piska')!;
+
 const BossaPiskaProject = () => {
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Bossa Piska Project (15,000m²)</h1>
-                <p className="text-slate-400">Phase 2 Development Tracker • Willemstad, Curaçao</p>
+                <h1 className="text-3xl font-bold text-white mb-2">{project.name} ({project.totalArea})</h1>
+                <p className="text-slate-400">{project.subtitle}</p>
             </div>
 
             {/* Top Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatCard icon={Map} label="Total Area" value="15,000 m²" sub="100% Secured" />
-                <StatCard icon={HardHat} label="Construction Status" value="Phase 1" sub="On Schedule" />
-                <StatCard icon={TrendingUp} label="Project Value" value="$12.5M" sub="+15% YoY" />
-                <StatCard icon={Users} label="Investors" value="42" sub="3 Slots Left" />
+                {project.stats.map((stat: ProjectStat) => (
+                    <StatCard
+                        key={stat.label}
+                        icon={stat.icon!}
+                        label={stat.label}
+                        value={stat.value}
+                        sub={stat.badge!}
+                    />
+                ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
